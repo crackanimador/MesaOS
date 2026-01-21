@@ -2,6 +2,10 @@
 #include "arch/i386/io_port.hpp"
 #include "drivers/vga.hpp"
 #include "shell.hpp"
+#include "login.hpp"
+#include "apps/nano.hpp"
+#include "arch/i386/idt.hpp"  // Para Registers
+#include "arch/i386/isr.hpp"  // Para IRQ1
 
 namespace MesaOS::Drivers {
 
@@ -9,6 +13,15 @@ bool Keyboard::shift_pressed = false;
 bool Keyboard::ctrl_pressed = false;
 bool Keyboard::alt_pressed = false;
 bool Keyboard::e0_escape = false;
+Keyboard::InputHandler Keyboard::current_input_handler = nullptr;
+
+// Forward declaration of login handler
+extern "C" void mesaos_login_handle_keypress(char c);
+
+// Dummy handler that ignores input
+static void dummy_input_handler(char c) {
+    (void)c; // Ignore input
+}
 
 static const char kbd_us[] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -30,12 +43,27 @@ void Keyboard::initialize() {
 
 void Keyboard::callback(MesaOS::Arch::x86::Registers* regs) {
     (void)regs;
+
+    // Read scancode from PS/2 port
     uint8_t scancode = MesaOS::Arch::x86::inb(0x60);
-    handle_scancode(scancode);
+
+    // VirtualBox compatibility: Sometimes we need to read again or handle differently
+    // Check if we have a valid scancode (not 0x00 or 0xFF which can indicate issues)
+    if (scancode != 0x00 && scancode != 0xFF) {
+        handle_scancode(scancode);
+    }
 }
 
 bool Keyboard::is_ctrl_pressed() {
     return ctrl_pressed;
+}
+
+void Keyboard::set_input_handler(InputHandler handler) {
+    current_input_handler = handler;
+}
+
+void Keyboard::set_dummy_handler() {
+    current_input_handler = dummy_input_handler;
 }
 
 void Keyboard::handle_scancode(uint8_t scancode) {
@@ -67,16 +95,20 @@ void Keyboard::handle_scancode(uint8_t scancode) {
     if (e0_escape) {
         if (scancode == 0x48) { // Up
             if (ctrl_pressed) {
-                // Ctrl+Up = Scroll Up
-                MesaOS::Drivers::VGADriver::scroll_up();
+                // Ctrl+Up = Scroll Up (DISABLED in nano to prevent page-fault)
+                if (!MesaOS::Apps::Nano::is_running()) {
+                    MesaOS::Drivers::VGADriver::scroll_up();
+                }
             } else {
                 // Normal Up = History
                 MesaOS::System::Shell::handle_input(0x11);
             }
         } else if (scancode == 0x50) { // Down
             if (ctrl_pressed) {
-                // Ctrl+Down = Scroll Down
-                MesaOS::Drivers::VGADriver::scroll_down();
+                // Ctrl+Down = Scroll Down (DISABLED in nano to prevent page-fault)
+                if (!MesaOS::Apps::Nano::is_running()) {
+                    MesaOS::Drivers::VGADriver::scroll_down();
+                }
             } else {
                 // Normal Down = History
                 MesaOS::System::Shell::handle_input(0x12);
@@ -113,7 +145,13 @@ void Keyboard::handle_scancode(uint8_t scancode) {
         if (scancode < sizeof(kbd_us)) {
             char c = shift_pressed ? kbd_us_shift[scancode] : kbd_us[scancode];
             if (c != 0) {
-                MesaOS::System::Shell::handle_input(c);
+                // Send input to current handler (login or shell)
+                if (current_input_handler) {
+                    current_input_handler(c);
+                } else {
+                    // Fallback to shell if no handler set
+                    MesaOS::System::Shell::handle_input(c);
+                }
             }
         }
     }

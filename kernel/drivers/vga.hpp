@@ -54,6 +54,10 @@ public:
     static void add_line_to_buffer(const char* line);
     static void render_view();
 
+    // ANSI escape sequence support
+    static void process_ansi_sequence(const char* sequence, int length);
+    static void set_color_from_ansi(int code);
+
 private:
     static size_t terminal_row;
     static size_t terminal_column;
