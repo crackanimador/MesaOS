@@ -16,6 +16,7 @@ extern "C" {
     char* strncat(char* dest, const char* src, size_t n);
     char* strchr(const char* s, int c);
     char* itoa(int value, char* str, int base);
+    void* memmove(void* dest, const void* src, size_t n);
 }
 
 #endif
