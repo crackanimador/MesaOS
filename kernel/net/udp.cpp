@@ -1,6 +1,7 @@
 #include "udp.hpp"
 #include "ipv4.hpp"
 #include "dhcp.hpp"
+#include "logging.hpp"
 #include "memory/kheap.hpp"
 #include <string.h>
 
@@ -38,6 +39,15 @@ void UDP::send_packet(uint32_t dest_ip, uint16_t src_port, uint16_t dest_port, u
     memcpy(buffer + sizeof(UDPHeader), data, size);
 
     IPv4::send_packet(dest_ip, 0x11, buffer, total_size);
+}
+
+void UDP::handle_packet_ipv6(const uint8_t* src_ip, uint8_t* data, uint32_t size) {
+    // Placeholder for IPv6 UDP handling
+    // TODO: Implement full IPv6 UDP support
+    MesaOS::System::Logging::info("IPv6 UDP packet received (not implemented yet)");
+    (void)src_ip;
+    (void)data;
+    (void)size;
 }
 
 } // namespace MesaOS::Net

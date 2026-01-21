@@ -1,6 +1,7 @@
 #include "ethernet.hpp"
 #include "arp.hpp"
 #include "ipv4.hpp"
+#include "ipv6.hpp"
 #include "drivers/rtl8139.hpp"
 #include "drivers/pcnet.hpp"
 #include "drivers/vga.hpp"
@@ -26,6 +27,8 @@ void Ethernet::handle_packet(uint8_t* data, uint32_t size) {
         ARP::handle_packet(payload, payload_size);
     } else if (type == 0x0008 || type == 0x0800 || type == swap_uint16(0x0800)) { // IPv4 (0x0800)
         IPv4::handle_packet(payload, payload_size);
+    } else if (type == 0xDD86 || type == swap_uint16(0x86DD)) { // IPv6 (0x86DD)
+        IPv6::handle_packet(payload, payload_size);
     } else {
         // Unknown type debug
         // MesaOS::Drivers::VGADriver vga;

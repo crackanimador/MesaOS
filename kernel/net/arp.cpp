@@ -50,12 +50,27 @@ void ARP::send_reply(uint8_t* dest_mac, uint32_t dest_ip) {
 }
 
 uint8_t* ARP::resolve(uint32_t target_ip) {
-    if (target_ip == cache_ip) {
+    if (target_ip == cache_ip && cache_ip != 0) {
         return cache_mac;
     }
-    
+
     // Not in cache, send request and return broadcast for now
+    // In a real implementation, we'd wait for ARP response
     send_request(target_ip);
+
+    // For external IPs, try gateway MAC if we have it cached
+    if (IPv4::get_gateway() != 0 && target_ip != IPv4::get_gateway()) {
+        // If target is not on local network, use gateway
+        uint32_t gateway = IPv4::get_gateway();
+        if (gateway == cache_ip) {
+            return cache_mac;
+        } else {
+            // Send ARP for gateway and return broadcast as fallback
+            send_request(gateway);
+        }
+    }
+
+    // Return broadcast MAC as fallback (may not work for external hosts)
     return broadcast_mac;
 }
 

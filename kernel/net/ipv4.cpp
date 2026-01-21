@@ -1,6 +1,7 @@
 #include "ipv4.hpp"
 #include "ethernet.hpp"
 #include "udp.hpp"
+#include "tcp.hpp"
 #include "arp.hpp"
 #include "icmp.hpp" // Added by instruction
 #include "memory/kheap.hpp"
@@ -11,6 +12,7 @@ namespace MesaOS::Net {
 uint32_t IPv4::my_ip = 0;
 uint32_t IPv4::gateway_ip = 0;
 uint32_t IPv4::subnet_mask = 0;
+static uint16_t next_id = 0x1234;
 
 static inline uint16_t swap_uint16(uint16_t val) {
     return (val << 8) | (val >> 8);
@@ -42,6 +44,8 @@ void IPv4::handle_packet(uint8_t* data, uint32_t size) {
 
     if (header->protocol == 17) { // UDP
         UDP::handle_packet(header->src_ip, payload, payload_size);
+    } else if (header->protocol == 6) { // TCP
+        TCP::handle_packet(header->src_ip, payload, payload_size);
     } else if (header->protocol == 1) { // ICMP
         ICMP::handle_packet(payload, payload_size, header->src_ip);
     }
@@ -54,7 +58,7 @@ void IPv4::send_packet(uint32_t dest_ip, uint8_t protocol, uint8_t* data, uint32
     header->version_ihl = 4 << 4 | 5;
     header->tos = 0;
     header->length = swap_uint16(sizeof(IPv4Header) + size);
-    header->id = swap_uint16(0x1234); // TODO: Increment
+    header->id = swap_uint16(next_id++);
     header->flags_fragment = 0; // swap_uint16(0x4000); // DF
     header->ttl = 64;
     header->protocol = protocol;
