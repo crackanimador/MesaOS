@@ -21,24 +21,48 @@ KERNEL_OBJS = \
 	kernel/drivers/pcnet.o \
 	kernel/drivers/pit.o \
 	kernel/drivers/rtc.o \
+	kernel/drivers/wifi.o \
+	kernel/drivers/usb.o \
+	kernel/drivers/audio.o \
 	kernel/memory/pmm.o \
 	kernel/memory/kheap.o \
 	kernel/memory/paging.o \
+	kernel/memory/vmm.o \
 	kernel/fs/vfs.o \
 	kernel/fs/ramfs.o \
 	kernel/fs/mbr.o \
 	kernel/fs/mesafs.o \
+	kernel/fs/crypto.o \
 	kernel/apps/nano.o \
+	kernel/apps/test.o \
 	kernel/scheduler.o \
 	kernel/shell.o \
+	kernel/syscall.o \
+	kernel/signals.o \
+	kernel/filedesc.o \
+	kernel/environment.o \
+	kernel/devices.o \
+	kernel/panic.o \
 	kernel/kernel.o \
 	kernel/drivers/vga.o \
 	kernel/net/ethernet.o \
 	kernel/net/arp.o \
 	kernel/net/ipv4.o \
+	kernel/net/tcp.o \
+	kernel/net/http.o \
+	kernel/net/ssh.o \
 	kernel/net/udp.o \
 	kernel/net/dhcp.o \
-	kernel/net/icmp.o
+	kernel/net/icmp.o \
+	kernel/net/ipv6.o \
+	kernel/net/package.o \
+	kernel/init.o \
+	kernel/users.o \
+	kernel/login.o \
+	kernel/capabilities.o \
+	kernel/net/firewall.o \
+	kernel/audit.o \
+	kernel/logging.o
 
 MESAOS_BIN = MesaOS.bin
 MESAOS_ISO = MesaOS.iso
@@ -68,4 +92,13 @@ clean:
 qemu: iso
 	qemu-system-i386 -boot d -cdrom $(MESAOS_ISO) -hda disk.img -net nic,model=rtl8139 -net user
 
-.PHONY: all clean iso qemu
+qemu-bridge: iso
+	qemu-system-i386 -boot d -cdrom $(MESAOS_ISO) -hda disk.img -net nic,model=rtl8139 -net bridge,br=br0
+
+qemu-tap: iso
+	qemu-system-i386 -boot d -cdrom $(MESAOS_ISO) -hda disk.img -net nic,model=rtl8139 -net tap,ifname=tap0,script=no,downscript=no
+
+run: iso
+	qemu-system-i386 -boot d -cdrom $(MESAOS_ISO) -m 512 -vga std -serial stdio
+
+.PHONY: all clean iso qemu run
