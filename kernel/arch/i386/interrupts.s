@@ -138,3 +138,11 @@ idt_flush:
     mov 4(%esp), %eax
     lidt (%eax)
     ret
+
+# Syscall interrupt handler (INT 0x80 = 128)
+.global syscall_handler
+syscall_handler:
+    cli
+    push $0      # Error code (none)
+    push $128    # Interrupt number
+    jmp isr_common_stub

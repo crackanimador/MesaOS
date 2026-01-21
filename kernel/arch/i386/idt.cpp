@@ -17,6 +17,7 @@ extern "C" void irq0(); extern "C" void irq1(); extern "C" void irq2(); extern "
 extern "C" void irq4(); extern "C" void irq5(); extern "C" void irq6(); extern "C" void irq7();
 extern "C" void irq8(); extern "C" void irq9(); extern "C" void irq10(); extern "C" void irq11();
 extern "C" void irq12(); extern "C" void irq13(); extern "C" void irq14(); extern "C" void irq15();
+extern "C" void syscall_handler();
 
 namespace MesaOS::Arch::x86 {
 
@@ -98,6 +99,9 @@ void IDT::initialize() {
     set_gate(45, (uint32_t)irq13, 0x08, 0x8E);
     set_gate(46, (uint32_t)irq14, 0x08, 0x8E);
     set_gate(47, (uint32_t)irq15, 0x08, 0x8E);
+    
+    // Syscall gate (INT 0x80 = 128) - User callable (0xEE = 0x8E | 0x60)
+    set_gate(128, (uint32_t)syscall_handler, 0x08, 0xEE);
 
     idt_flush((uint32_t)&pointer);
 }
