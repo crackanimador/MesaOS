@@ -47,7 +47,7 @@ void Nano::save() {
             const char* name = (current_file[0] == '/') ? current_file + 6 : current_file + 5;
             node = MesaOS::FS::MesaFS::create_file(name);
         } else {
-            node = MesaOS::FS::RAMFS::create_file(current_file, "");
+            node = MesaOS::FS::MesaFS::create_file(current_file);
         }
     }
     
