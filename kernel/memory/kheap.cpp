@@ -1,5 +1,8 @@
 #include "kheap.hpp"
 #include <string.h>
+#include "panic.hpp"
+#include "scheduler.hpp"
+#include "logging.hpp"
 
 namespace MesaOS::Memory {
 
@@ -40,7 +43,27 @@ void KHeap::free(void* ptr) {
 } // namespace MesaOS::Memory
 
 extern "C" void* kmalloc(size_t size) {
-    return MesaOS::Memory::KHeap::malloc(size);
+    void* ptr = MesaOS::Memory::KHeap::malloc(size);
+    if (!ptr) {
+        // OOM Killer: Try to free memory by killing processes
+        MesaOS::System::Logging::warn("Kernel heap allocation failed - activating OOM Killer");
+
+        // Get current process
+        MesaOS::System::Process* current_proc = MesaOS::System::Scheduler::get_current();
+        if (current_proc && current_proc->pid != 0) { // Don't kill kernel
+            MesaOS::System::Logging::info("OOM Killer terminating current process");
+            MesaOS::System::Scheduler::remove_process(current_proc->pid);
+
+            // Try allocation again after killing a process
+            ptr = MesaOS::Memory::KHeap::malloc(size);
+        }
+
+        if (!ptr) {
+            // Still no memory - kernel panic
+            MesaOS::System::KernelPanic::panic("Out of kernel memory - OOM Killer failed");
+        }
+    }
+    return ptr;
 }
 
 extern "C" void kfree(void* ptr) {

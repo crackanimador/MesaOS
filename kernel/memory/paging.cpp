@@ -58,4 +58,8 @@ void Paging::map_page(uint32_t virtual_addr, uint32_t physical_addr, bool user, 
     asm volatile("invlpg (%0)" : : "r"(virtual_addr) : "memory");
 }
 
+uint32_t* Paging::get_kernel_directory() {
+    return page_directory;
+}
+
 } // namespace MesaOS::Memory
